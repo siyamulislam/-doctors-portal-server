@@ -23,8 +23,17 @@ client.connect(err => {
         console.log(appointment);
         appointmentsCollections.insertOne(appointment)
             .then(result => {
-                console.log(result);
+                console.log(result); 
                 res.send(result.acknowledged)
+            })
+    })
+    app.post('/appointmentsByDate', (req, res) => {
+        const date = req.body;
+        console.log(date);
+        appointmentsCollections.find({date: date.selectedDate})
+            .toArray((err,documents)=>{
+                 console.log(documents);
+                res.send(documents)
             })
     })
 
