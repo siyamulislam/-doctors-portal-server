@@ -22,7 +22,6 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 client.connect(err => {
     const appointmentsCollections = client.db("doctorsPortal").collection("appointments");
     const doctorCollection = client.db("doctorsPortal").collection("doctors");
-    // const ordersCollections = client.db("emaJhonDB").collection("orders");
 
     app.post('/addAppointments', (req, res) => {
         const appointment = req.body;
@@ -43,7 +42,6 @@ client.connect(err => {
                 if (doctors.length === 0) {
                     filter.email = email;
                 }
-                console.log(filter);
                 appointmentsCollections.find(filter)
                     .toArray((err, documents) => {
                         res.send(documents)
@@ -77,6 +75,15 @@ client.connect(err => {
                 res.send(documents)
             })
     })
+
+    app.post('/isDoctor', (req, res) => {
+        const email = req.body.email;
+        doctorCollection.find({ email: email })
+            .toArray((err, doctors) => {
+                res.send(doctors)
+            })
+    })
+
 
     //  //to show products on ReviewItem.js
     // app.get('/product/:key', (req, res) => {
