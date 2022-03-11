@@ -29,52 +29,49 @@ client.connect(err => {
         console.log(appointment);
         appointmentsCollections.insertOne(appointment)
             .then(result => {
-                console.log(result); 
+                console.log(result);
                 res.send(result.acknowledged)
             })
     })
     app.post('/appointmentsByDate', (req, res) => {
-        const date = req.body.selectedDate; 
-        const email = req.body.email; 
-        doctorCollection.find({email:email})
-            .toArray((err,documents)=>{ 
-                console.log(documents);
-                if(documents.length){
-                    appointmentsCollections.find({date: date})
-                    .toArray((err,documents)=>{ 
+        const date = req.body.selectedDate;
+        const email = req.body.email;
+        doctorCollection.find({ email: email })
+            .toArray((err, doctors) => {
+                console.log(doctors);
+                const filter = { date: date }
+                if (doctors.length === 0) {
+                    filter.email = email;
+                }
+                console.log(filter);
+                appointmentsCollections.find(filter)
+                    .toArray((err, documents) => {
                         res.send(documents)
                     })
-                }
-                else{
-                    appointmentsCollections.find({date: date,email:email})
-                .toArray((err,documents)=>{ 
-                    res.send(documents)
-                })
-                }
             })
     })
-    app.post('/addADoctor',(req,res)=>{
-        const file= req.files.file;
-        const name= req.body.name;
-        const email= req.body.email;  
-        const phone= req.body.phone;  
+    app.post('/addADoctor', (req, res) => {
+        const file = req.files.file;
+        const name = req.body.name;
+        const email = req.body.email;
+        const phone = req.body.phone;
         console.log(file);
-        file.mv(`${__dirname}/doctors/${file.name}`,err=>{
-            if(err){
+        file.mv(`${__dirname}/doctors/${file.name}`, err => {
+            if (err) {
                 console.log(error);
-                return res.status(500).send({mess:'failed to upload image to Server'})
+                return res.status(500).send({ mess: 'failed to upload image to Server' })
             }
-            doctorCollection.insertOne({name,email,phone,img:file.name})
-            .then(result => {
-                console.log(result); 
-                res.send(result.acknowledged)
-            })
+            doctorCollection.insertOne({ name, email, phone, img: file.name })
+                .then(result => {
+                    console.log(result);
+                    res.send(result.acknowledged)
+                })
             // return res.send({name:file.name,path:`/${file.name}`})
         })
     })
-    
 
-    app.get('/doctors', (req, res) => { 
+
+    app.get('/doctors', (req, res) => {
         doctorCollection.find({})
             .toArray((err, documents) => {
                 res.send(documents)
