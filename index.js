@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const fileUpload = require('express-fileupload');
 
 const { MongoClient, ObjectId } = require('mongodb');
 require('dotenv').config()
@@ -10,12 +11,17 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 
-const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.7oely.mongodb.net/${process.env.DB_Name}?retryWrites=true&w=majority`;
+app.use(express.static('doctors'));
+app.use(fileUpload());
 
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.7oely.mongodb.net/${process.env.DB_Name}?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
+
+
 
 client.connect(err => {
     const appointmentsCollections = client.db("doctorsPortal").collection("appointments");
+    const doctorCollection = client.db("doctorsPortal").collection("doctors");
     // const ordersCollections = client.db("emaJhonDB").collection("orders");
 
     app.post('/addAppointments', (req, res) => {
@@ -28,23 +34,52 @@ client.connect(err => {
             })
     })
     app.post('/appointmentsByDate', (req, res) => {
-        const date = req.body;
-        console.log(date);
-        appointmentsCollections.find({date: date.selectedDate})
-            .toArray((err,documents)=>{
-                 console.log(documents);
+        const date = req.body.selectedDate; 
+        const email = req.body.email; 
+        doctorCollection.find({email:email})
+            .toArray((err,documents)=>{ 
+                console.log(documents);
+                if(documents.length){
+                    appointmentsCollections.find({date: date})
+                    .toArray((err,documents)=>{ 
+                        res.send(documents)
+                    })
+                }
+                else{
+                    appointmentsCollections.find({date: date,email:email})
+                .toArray((err,documents)=>{ 
+                    res.send(documents)
+                })
+                }
+            })
+    })
+    app.post('/addADoctor',(req,res)=>{
+        const file= req.files.file;
+        const name= req.body.name;
+        const email= req.body.email;  
+        const phone= req.body.phone;  
+        console.log(file);
+        file.mv(`${__dirname}/doctors/${file.name}`,err=>{
+            if(err){
+                console.log(error);
+                return res.status(500).send({mess:'failed to upload image to Server'})
+            }
+            doctorCollection.insertOne({name,email,phone,img:file.name})
+            .then(result => {
+                console.log(result); 
+                res.send(result.acknowledged)
+            })
+            // return res.send({name:file.name,path:`/${file.name}`})
+        })
+    })
+    
+
+    app.get('/doctors', (req, res) => { 
+        doctorCollection.find({})
+            .toArray((err, documents) => {
                 res.send(documents)
             })
     })
-
-    // app.get('/products', (req, res) => {
-    //     const search=req.query.search;
-    //     console.log(search);
-    //     productsCollections.find({name:  RegExp(search)}).limit(20)
-    //         .toArray((err, documents) => {
-    //             res.send(documents)
-    //         })
-    // })
 
     //  //to show products on ReviewItem.js
     // app.get('/product/:key', (req, res) => {
