@@ -1,9 +1,11 @@
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const fs = require('fs-extra');
 const fileUpload = require('express-fileupload');
 
 const { MongoClient, ObjectId } = require('mongodb');
+const { contentType } = require('express/lib/response');
 require('dotenv').config()
 const port = 5000
 const app = express();
@@ -53,16 +55,29 @@ client.connect(err => {
         const name = req.body.name;
         const email = req.body.email;
         const phone = req.body.phone;
+        const filePath = `${__dirname}/doctors/${file.name}`
         console.log(file);
-        file.mv(`${__dirname}/doctors/${file.name}`, err => {
+        file.mv(filePath, err => {
             if (err) {
                 console.log(error);
                 return res.status(500).send({ mess: 'failed to upload image to Server' })
             }
-            doctorCollection.insertOne({ name, email, phone, img: file.name })
+            const newImage = fs.readFileSync(filePath);
+            const encImage = newImage.toString('base64');
+            var image = {
+                contentType: req.files.file.mimetype,
+                size: req.files.file.size,
+                img: Buffer(encImage, 'base64')
+            }
+            doctorCollection.insertOne({ name, email, phone, image })
                 .then(result => {
-                    console.log(result);
-                    res.send(result.acknowledged)
+                    fs.remove(filePath, err => {
+                        if (err) { console.log(err);
+                            res.status(500).send({ mess: 'failed to upload image to Server' })
+                        }
+                        res.send(result.acknowledged);
+                    })
+
                 })
             // return res.send({name:file.name,path:`/${file.name}`})
         })
@@ -83,7 +98,6 @@ client.connect(err => {
                 res.send(doctors)
             })
     })
-
 
     //  //to show products on ReviewItem.js
     // app.get('/product/:key', (req, res) => {
