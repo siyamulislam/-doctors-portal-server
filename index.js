@@ -23,7 +23,6 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 client.connect(err => {
     const appointmentsCollections = client.db("doctorsPortal").collection("appointments");
     const doctorCollection = client.db("doctorsPortal").collection("doctors");
-
     app.post('/addAppointments', (req, res) => {
         const appointment = req.body;
         console.log(appointment);
@@ -117,8 +116,6 @@ client.connect(err => {
                 res.send(doctors)
             })
     })
-
-
 
     console.log('db connected');
 });
